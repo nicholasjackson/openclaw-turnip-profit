@@ -54,7 +54,7 @@ pip3 install matplotlib
 
 **jq (optional, for cron reminders):**
 
-Debian/Ubuntu:
+Debian/Ubuntu (requires sudo):
 ```bash
 sudo apt-get update && sudo apt-get install -y jq
 ```
@@ -63,6 +63,8 @@ macOS:
 ```bash
 brew install jq
 ```
+
+**Note:** System package installs (`apt-get`, `brew`) may require elevated privileges. Review commands before running.
 
 ## Usage
 
