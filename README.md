@@ -45,6 +45,18 @@ As you report new prices, predictions get more accurate.
 - gnuplot (for charts)
 - jq (for cron reminders - optional)
 
+### Installation
+
+**Debian/Ubuntu:**
+```bash
+sudo apt-get update && sudo apt-get install -y python3 gnuplot jq
+```
+
+**macOS:**
+```bash
+brew install gnuplot jq
+```
+
 ## Usage
 
 For OpenClaw users: install via ClawHub
@@ -71,20 +83,30 @@ The skill can send automatic reminders via Telegram:
 - **Mon-Sat noon + 8pm**: Check Nook's Cranny prices
 - **Saturday 9:45pm**: Final warning before turnips rot
 
-On first use, the agent will offer to set this up automatically. Or manually add to crontab:
+**Setup:**
+
+1. Get your Telegram user ID (ask your OpenClaw agent or check logs)
+2. Review and customize the cron entries below
+3. Replace `YOUR_TELEGRAM_ID` with your actual Telegram user ID
 
 ```bash
-(crontab -l 2>/dev/null; cat <<'EOF'
+# Create a file to review first:
+cat > /tmp/turnip-cron.txt <<'EOF'
 # Turnip Prophet reminders
-0 8 * * 0 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
-0 12 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-0 20 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-45 21 * * 6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+0 8 * * 0 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
+0 12 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 20 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+45 21 * * 6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
 EOF
-) | crontab -
+
+# Review the file:
+cat /tmp/turnip-cron.txt
+
+# If it looks good, install:
+(crontab -l 2>/dev/null; cat /tmp/turnip-cron.txt) | crontab -
 ```
 
-Adjust times for your timezone.
+Adjust times for your timezone. The skill will only send reminders for missing data.
 
 ## Example
 

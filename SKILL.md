@@ -2,6 +2,30 @@
 name: turnip-prophet
 description: Predict Animal Crossing New Horizons turnip prices using the game's exact algorithm. Use when a user asks about turnip prices, ACNH turnips, stalk market, turnip predictions, when to sell turnips, or bell profit from turnips.
 repository: https://github.com/nicholasjackson/openclaw-turnip-profit
+metadata:
+  {
+    "openclaw":
+      {
+        "requires": { "bins": ["python3", "gnuplot", "jq"] },
+        "install":
+          [
+            {
+              "id": "deps-debian",
+              "kind": "shell",
+              "label": "Install dependencies (Debian/Ubuntu)",
+              "command": "sudo apt-get update && sudo apt-get install -y python3 gnuplot jq",
+              "when": "debian"
+            },
+            {
+              "id": "deps-macos",
+              "kind": "shell",
+              "label": "Install dependencies (macOS)",
+              "command": "brew install gnuplot jq",
+              "when": "darwin"
+            }
+          ]
+      }
+  }
 ---
 
 # Turnip Prophet - Animal Crossing Turnip Price Predictor
@@ -56,36 +80,46 @@ If NOT configured, send a message:
 > - Mon-Sat noon + 8pm: Check Nook's Cranny prices
 > - Saturday 9:45pm: Last chance warning
 > 
-> Reply 'yes' to auto-configure, or see the skill README for manual setup."
+> I'll show you the exact cron entries before adding them. See the skill README for manual setup."
 
-If user confirms, generate and add the cron entries (see Manual Setup below).
+**Do NOT auto-modify crontab.** Instead, show the user the exact cron entries that would be added and ask them to review and confirm before proceeding.
 
 ### Manual Setup
 
-Add these entries to user's crontab:
+**Requirements:**
+1. Set `TURNIP_TELEGRAM_TARGET` environment variable to your Telegram user ID
+2. Optionally set `OPENCLAW_BIN` if `openclaw` is not in your PATH
+
+**Example cron entries:**
 
 ```bash
 # Turnip Prophet - Sunday morning reminder (8 AM local time)
-0 8 * * 0 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
+0 8 * * 0 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
 
 # Turnip Prophet - Daily price check reminders (Mon-Sat, noon + 8 PM local time)
-0 12 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-0 20 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 12 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 20 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
 
 # Turnip Prophet - Saturday final warning (9:45 PM local time)
-45 21 * * 6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+45 21 * * 6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
 ```
 
-**To install:**
+**To install (replace YOUR_TELEGRAM_ID):**
 ```bash
-(crontab -l 2>/dev/null; cat <<'EOF'
+# First, get your Telegram user ID from OpenClaw logs or ask your agent
+# Then review these commands before running:
+
+cat > /tmp/turnip-cron.txt <<'EOF'
 # Turnip Prophet reminders
-0 8 * * 0 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
-0 12 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-0 20 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-45 21 * * 6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+0 8 * * 0 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
+0 12 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 20 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+45 21 * * 6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
 EOF
-) | crontab -
+
+# Review the file, then install:
+cat /tmp/turnip-cron.txt
+(crontab -l 2>/dev/null; cat /tmp/turnip-cron.txt) | crontab -
 ```
 
 ### Cron Handler Logic

@@ -8,13 +8,18 @@ SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MEMORY_FILE="$SKILL_DIR/memory/turnip-week.json"
 EVENT="${1:-}"
 
-# Telegram target (replace with actual user ID or use env var)
-TELEGRAM_TARGET="${TURNIP_TELEGRAM_TARGET:-8577655544}"
+# Telegram target MUST be set via env var
+if [[ -z "${TURNIP_TELEGRAM_TARGET}" ]]; then
+    echo "Error: TURNIP_TELEGRAM_TARGET environment variable not set" >&2
+    exit 1
+fi
+
+OPENCLAW_BIN="${OPENCLAW_BIN:-$(which openclaw 2>/dev/null || echo '/usr/local/bin/openclaw')}"
 
 send_telegram() {
     local message="$1"
-    /usr/local/bin/openclaw gateway call message.send \
-        --params "{\"channel\":\"telegram\",\"target\":\"$TELEGRAM_TARGET\",\"message\":\"$message\"}" \
+    "$OPENCLAW_BIN" gateway call message.send \
+        --params "{\"channel\":\"telegram\",\"target\":\"$TURNIP_TELEGRAM_TARGET\",\"message\":\"$message\"}" \
         2>&1 | logger -t turnip-prophet-cron
 }
 
