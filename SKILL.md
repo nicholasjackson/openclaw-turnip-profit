@@ -1,6 +1,7 @@
 ---
 name: turnip-prophet
 description: Predict Animal Crossing New Horizons turnip prices using the game's exact algorithm. Use when a user asks about turnip prices, ACNH turnips, stalk market, turnip predictions, when to sell turnips, or bell profit from turnips.
+repository: https://github.com/nicholasjackson/openclaw-turnip-profit
 ---
 
 # Turnip Prophet - Animal Crossing Turnip Price Predictor

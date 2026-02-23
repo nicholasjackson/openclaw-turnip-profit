@@ -4,6 +4,9 @@ Animal Crossing: New Horizons turnip price predictor using the game's actual alg
 
 An [OpenClaw](https://openclaw.ai) agent skill that predicts turnip prices and tells you when to sell for maximum bells 💰
 
+[![ClawHub](https://img.shields.io/badge/ClawHub-turnip--prophet-blue)](https://clawhub.com/skills/turnip-prophet)
+[![GitHub](https://img.shields.io/badge/GitHub-openclaw--turnip--profit-black)](https://github.com/nicholasjackson/openclaw-turnip-profit)
+
 ## What It Does
 
 Predicts ACNH turnip prices based on:
