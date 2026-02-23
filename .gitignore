@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Memory files (user-specific)
+memory/
+
+# Temp files
+*.tmp
+*.log
+/tmp/
+
+# Chart outputs
+*.png
+*.jpg
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
