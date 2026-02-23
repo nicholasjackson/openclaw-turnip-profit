@@ -2,11 +2,13 @@
 """
 Test script for the turnip price predictor
 Demonstrates the exact algorithm functionality
+Run from skill root directory: python3 test_turnip_predictor.py
 """
 
 import json
 import subprocess
 import sys
+import os
 
 def test_predictor(test_name, input_data):
     """Test the predictor with given input"""
@@ -14,10 +16,14 @@ def test_predictor(test_name, input_data):
     print(f"Input: {input_data}")
     
     try:
+        # Determine script path relative to this test file
+        skill_dir = os.path.dirname(os.path.abspath(__file__))
+        scripts_dir = os.path.join(skill_dir, 'scripts')
+        
         # Run the predictor
         process = subprocess.Popen(
             ['python3', 'turnip_predict.py'],
-            cwd='/home/nicj/.openclaw/workspace/skills/turnip-prophet/scripts',
+            cwd=scripts_dir,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
