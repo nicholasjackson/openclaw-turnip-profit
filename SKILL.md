@@ -98,6 +98,27 @@ crontab -e
 
 **Important:** You must explicitly confirm the setup flow before any config is saved. Declining the setup offer means nothing is stored.
 
+## Credentials & Permissions
+
+**The skill itself does not request or store any API keys or credentials.**
+
+However, **if you enable cron reminders**, the installed cron jobs will:
+- Use your local `openclaw` CLI binary
+- Send messages using your existing OpenClaw configuration and credentials
+- Operate with whatever permissions your OpenClaw instance has
+
+**What this means:**
+- Automated reminders will be sent **as you**, using your OpenClaw identity
+- The cron jobs require OpenClaw to be running and properly configured
+- Messages are sent through your configured channels (Telegram/WhatsApp/etc.) using your bot tokens or API credentials
+
+**You are granting permission for:**
+- Automated message sending on your behalf
+- Using your existing messaging channel credentials
+- Running scheduled tasks that invoke `openclaw gateway call message.send`
+
+If you're uncomfortable with automated messaging using your credentials, **do not enable the cron reminders**. The core prediction feature works fine without them.
+
 ## Daily Reminders (Optional)
 
 On first use, offer to set up daily reminders with an interactive flow:

@@ -132,6 +132,22 @@ rm ~/.openclaw/workspace/skills/turnip-prophet/memory/turnip-week.json
 
 No data leaves your machine. No tracking, no external APIs, no cloud storage.
 
+## Credentials & Automated Messaging
+
+**The skill does not request or store API keys.**
+
+However, **if you enable cron reminders**, you're authorizing:
+- Automated messages sent **as you**, using your OpenClaw identity
+- Use of your existing OpenClaw credentials (bot tokens, API keys)
+- Scheduled execution of `openclaw gateway call message.send`
+
+**Requirements for cron reminders:**
+- OpenClaw must be running
+- Your messaging channel (Telegram/WhatsApp/etc.) must be configured
+- Your credentials must be valid
+
+If you don't want automated messaging using your credentials, skip the cron setup. The core prediction feature works independently and requires no credentials.
+
 ## Example
 
 ```
