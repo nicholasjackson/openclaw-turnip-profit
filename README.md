@@ -78,35 +78,26 @@ Then just ask your agent about turnip prices:
 
 ### Daily Reminders (Optional)
 
-The skill can send automatic reminders via Telegram:
+On first use, your agent will offer to set up automatic reminders:
 - **Sunday 8am**: Check Daisy Mae's price
 - **Mon-Sat noon + 8pm**: Check Nook's Cranny prices
 - **Saturday 9:45pm**: Final warning before turnips rot
 
-**Setup:**
+**Interactive Setup:**
 
-1. Get your Telegram user ID (ask your OpenClaw agent or check logs)
-2. Review and customize the cron entries below
-3. Replace `YOUR_TELEGRAM_ID` with your actual Telegram user ID
+Just say "yes" when prompted and the agent will:
+1. Auto-detect your messaging channel (Telegram/WhatsApp/Discord/Signal)
+2. Auto-detect your user ID from the current conversation
+3. Generate cron entries configured for your setup
+4. Show you exactly what will be installed
+5. Provide commands for you to review and confirm
 
-```bash
-# Create a file to review first:
-cat > /tmp/turnip-cron.txt <<'EOF'
-# Turnip Prophet reminders
-0 8 * * 0 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
-0 12 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-0 20 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-45 21 * * 6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
-EOF
+**What gets installed:**
+- A config file at `memory/turnip-config.json` with your channel/user ID
+- Four cron entries that only send reminders for missing data
+- No hard-coded values, no manual editing required
 
-# Review the file:
-cat /tmp/turnip-cron.txt
-
-# If it looks good, install:
-(crontab -l 2>/dev/null; cat /tmp/turnip-cron.txt) | crontab -
-```
-
-Adjust times for your timezone. The skill will only send reminders for missing data.
+Adjust times for your timezone by editing the cron schedule after installation.
 
 ## Example
 

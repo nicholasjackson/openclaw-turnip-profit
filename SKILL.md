@@ -65,84 +65,121 @@ Activate when user mentions:
 - "bell profit" with context of turnips
 - Any question about when to sell turnips in Animal Crossing
 
-## Cron Setup (Optional but Recommended)
+## Daily Reminders (Optional)
 
-### Auto-detect on first use
-When triggered for the first time (or when `memory/turnip-week.json` doesn't exist), check if cron reminders are configured:
+On first use, offer to set up daily reminders with an interactive flow:
 
-```bash
-crontab -l 2>/dev/null | grep -q "turnip-prophet"
+### Interactive Setup Flow (Agent Instructions)
+
+**On first trigger (when user asks about turnips for the first time):**
+
+1. **Check if already configured:**
+   ```bash
+   test -f memory/turnip-config.json && echo "configured" || echo "not configured"
+   ```
+
+2. **If NOT configured, offer setup:**
+   > "Want daily turnip reminders? I can ping you:
+   > • Sunday 8am: Check Daisy Mae's price
+   > • Mon-Sat noon + 8pm: Check Nook's prices  
+   > • Saturday 9:45pm: Final warning
+   > 
+   > Reply 'yes' to set up, or 'no' to skip."
+
+3. **If user says yes, auto-detect config:**
+   - **Channel:** Extract from inbound context JSON `"channel"` field (telegram/whatsapp/discord/signal)
+   - **Target ID:** Extract from inbound context JSON `"sender_id"` field
+   - **OpenClaw path:** Run `which openclaw` or use `/usr/local/bin/openclaw`
+   - **Skill dir:** Use the absolute path to this skill's directory
+
+4. **If auto-detection fails:**
+   - Ask user for missing values explicitly
+   - Validate before proceeding
+
+**Store config in `memory/turnip-config.json`:**
+```json
+{
+  "channel": "telegram",
+  "target": "8577655544",
+  "openclaw_bin": "/usr/local/bin/openclaw",
+  "skill_dir": "/home/user/.openclaw/workspace/skills/turnip-prophet",
+  "configured_at": "2026-02-23T10:30:00Z"
+}
 ```
 
-If NOT configured, send a message:
-> "Want me to set up daily turnip price reminders? I can ping you:
-> - Sunday 8am: Check Daisy Mae's price
-> - Mon-Sat noon + 8pm: Check Nook's Cranny prices
-> - Saturday 9:45pm: Last chance warning
-> 
-> I'll show you the exact cron entries before adding them. See the skill README for manual setup."
-
-**Do NOT auto-modify crontab.** Instead, show the user the exact cron entries that would be added and ask them to review and confirm before proceeding.
-
-### Manual Setup
-
-**Requirements:**
-1. Set `TURNIP_TELEGRAM_TARGET` environment variable to your Telegram user ID
-2. Optionally set `OPENCLAW_BIN` if `openclaw` is not in your PATH
-
-**Example cron entries:**
-
+**Generate and show cron entries:**
+Show the user exactly what will be added, with their specific values. Example:
 ```bash
-# Turnip Prophet - Sunday morning reminder (8 AM local time)
-0 8 * * 0 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
-
-# Turnip Prophet - Daily price check reminders (Mon-Sat, noon + 8 PM local time)
-0 12 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-0 20 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-
-# Turnip Prophet - Saturday final warning (9:45 PM local time)
-45 21 * * 6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+# Turnip Prophet reminders for telegram:8577655544
+0 8 * * 0 /usr/local/bin/openclaw gateway call message.send --params '{"channel":"telegram","target":"8577655544","message":"🔔 Sunday! Check Daisy Mae'\''s turnip price (90-110 bells) and buy your turnips 🥬"}' 2>&1 | logger -t turnip-prophet
+0 12 * * 1-6 /usr/local/bin/openclaw gateway call message.send --params '{"channel":"telegram","target":"8577655544","message":"🔔 Time to check Nook'\''s Cranny turnip prices!"}' 2>&1 | logger -t turnip-prophet
+0 20 * * 1-6 /usr/local/bin/openclaw gateway call message.send --params '{"channel":"telegram","target":"8577655544","message":"🔔 Evening price check: Check Nook'\''s Cranny!"}' 2>&1 | logger -t turnip-prophet
+45 21 * * 6 /usr/local/bin/openclaw gateway call message.send --params '{"channel":"telegram","target":"8577655544","message":"⏰ FINAL CALL: Turnips expire at 10 PM! Sell now or they'\''ll rot 🗑️"}' 2>&1 | logger -t turnip-prophet
 ```
 
-**To install (replace YOUR_TELEGRAM_ID):**
-```bash
-# First, get your Telegram user ID from OpenClaw logs or ask your agent
-# Then review these commands before running:
+Replace channel/target with detected values. Escape single quotes properly.
 
-cat > /tmp/turnip-cron.txt <<'EOF'
-# Turnip Prophet reminders
-0 8 * * 0 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
-0 12 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-0 20 * * 1-6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
-45 21 * * 6 TURNIP_TELEGRAM_TARGET=YOUR_TELEGRAM_ID $(which openclaw) gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
-EOF
-
-# Review the file, then install:
-cat /tmp/turnip-cron.txt
-(crontab -l 2>/dev/null; cat /tmp/turnip-cron.txt) | crontab -
+**Confirm before installing:**
+```
+Look good? Reply 'confirm' to add these to your crontab.
 ```
 
-### Cron Handler Logic
+**On confirmation:**
+1. Write config to `memory/turnip-config.json`
+2. Generate a safe install command and show it to the user:
+   ```bash
+   # Save the cron entries to a temp file
+   cat > /tmp/turnip-cron-$$.txt <<'TURNIP_EOF'
+   [generated entries]
+   TURNIP_EOF
+   
+   # Review the file
+   cat /tmp/turnip-cron-$$.txt
+   
+   # If it looks good, install:
+   (crontab -l 2>/dev/null; cat /tmp/turnip-cron-$$.txt) | crontab -
+   ```
+3. Ask user to run the commands and confirm when done
+4. Reply: "✅ Once installed, you'll get reminders for missing data only. Check `crontab -l` to verify."
 
-When `--handler cron` is called with an event:
+**On rejection/cancel:**
+- Reply: "No problem. Config is saved in `memory/turnip-config.json` if you want to set it up manually later."
+
+### Cron Handler (scripts/cron_handler.sh)
+
+The cron script reads from `memory/turnip-config.json` for channel/target:
+
+```bash
+CONFIG_FILE="$SKILL_DIR/memory/turnip-config.json"
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Config not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+CHANNEL=$(jq -r '.channel' "$CONFIG_FILE")
+TARGET=$(jq -r '.target' "$CONFIG_FILE")
+OPENCLAW_BIN=$(jq -r '.openclaw_bin' "$CONFIG_FILE")
+```
+
+**Event types:**
 
 **sunday-daisy:**
-- Check if `memory/turnip-week.json` has a buy_price for the current week
-- If missing: Send Telegram reminder "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
-- If already set: Stay silent (user already reported it)
+- Check if `memory/turnip-week.json` has a buy_price for current week
+- If missing: Send reminder "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
+- If already set: Stay silent
 
 **daily-check:**
-- Read `memory/turnip-week.json`
-- Determine which price slot is missing (Mon AM/PM through Sat AM/PM)
-- Send reminder: "🔔 Time to check Nook's Cranny turnip prices! Currently missing: [list slots]"
-- If all prices already known for today: Stay silent
+- Determine which price slot is currently active (Mon AM/PM through Sat PM)
+- Check if that slot is filled in `memory/turnip-week.json`
+- If missing: Send reminder "🔔 [Day] [AM/PM]: Check Nook's Cranny turnip prices!"
+- If already filled: Stay silent
 
 **saturday-final:**
-- Read `memory/turnip-week.json`
-- If any prices still unknown OR user hasn't sold: "⏰ FINAL CALL: Turnips expire at 10 PM! Sell now or they'll rot 🗑️"
-- Include current prediction if data exists
+- Check how many prices are still null
+- If any missing OR no buy_price: Send "⏰ FINAL CALL: Turnips expire at 10 PM! Sell now or they'll rot 🗑️"
+- If all prices known: "⏰ Last chance to sell turnips tonight!"
 
-After sending a reminder, DO NOT wait for a response in the cron handler — just send and exit.
+Send via: `"$OPENCLAW_BIN" gateway call message.send --params "{\"channel\":\"$CHANNEL\",\"target\":\"$TARGET\",\"message\":\"...\"}"`
 
 ## How It Works
 

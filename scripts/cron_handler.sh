@@ -1,31 +1,39 @@
 #!/usr/bin/env bash
 # Turnip Prophet cron handler
-# Called via: openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"..."}'
+# Reads config from memory/turnip-config.json
 
 set -eo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_FILE="$SKILL_DIR/memory/turnip-config.json"
 MEMORY_FILE="$SKILL_DIR/memory/turnip-week.json"
 EVENT="${1:-}"
 
-# Telegram target MUST be set via env var
-if [[ -z "${TURNIP_TELEGRAM_TARGET}" ]]; then
-    echo "Error: TURNIP_TELEGRAM_TARGET environment variable not set" >&2
+# Load config
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Config not found at $CONFIG_FILE" >&2
+    echo "Run the skill setup first to configure reminders." >&2
     exit 1
 fi
 
-OPENCLAW_BIN="${OPENCLAW_BIN:-$(which openclaw 2>/dev/null || echo '/usr/local/bin/openclaw')}"
+CHANNEL=$(jq -r '.channel // ""' "$CONFIG_FILE")
+TARGET=$(jq -r '.target // ""' "$CONFIG_FILE")
+OPENCLAW_BIN=$(jq -r '.openclaw_bin // ""' "$CONFIG_FILE")
 
-send_telegram() {
+if [[ -z "$CHANNEL" ]] || [[ -z "$TARGET" ]] || [[ -z "$OPENCLAW_BIN" ]]; then
+    echo "Error: Invalid config in $CONFIG_FILE" >&2
+    exit 1
+fi
+
+send_message() {
     local message="$1"
     "$OPENCLAW_BIN" gateway call message.send \
-        --params "{\"channel\":\"telegram\",\"target\":\"$TURNIP_TELEGRAM_TARGET\",\"message\":\"$message\"}" \
+        --params "{\"channel\":\"$CHANNEL\",\"target\":\"$TARGET\",\"message\":\"$message\"}" \
         2>&1 | logger -t turnip-prophet-cron
 }
 
 get_current_week_start() {
     # ACNH weeks start on Sunday
-    # Get the most recent Sunday (or today if today is Sunday)
     date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d
 }
 
@@ -39,11 +47,11 @@ case "$EVENT" in
             
             # If it's a new week or no buy price set
             if [[ "$STORED_WEEK" != "$WEEK_START" ]] || [[ "$BUY_PRICE" == "null" ]]; then
-                send_telegram "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
+                send_message "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
             fi
         else
             # No memory file exists yet
-            send_telegram "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
+            send_message "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
         fi
         ;;
         
@@ -85,14 +93,14 @@ case "$EVENT" in
         if [[ "$PRICE" == "null" ]]; then
             # Get day name
             DAY_NAME=$(date +%A)
-            send_telegram "🔔 ${DAY_NAME} ${time_label}: Check Nook's Cranny turnip prices!"
+            send_message "🔔 ${DAY_NAME} ${TIME_LABEL}: Check Nook's Cranny turnip prices!"
         fi
         ;;
         
     saturday-final)
         if [[ ! -f "$MEMORY_FILE" ]]; then
             # No data, send generic warning
-            send_telegram "⏰ FINAL CALL: Turnips expire at 10 PM tonight! Sell now or they'll rot 🗑️"
+            send_message "⏰ FINAL CALL: Turnips expire at 10 PM tonight! Sell now or they'll rot 🗑️"
             exit 0
         fi
         
@@ -105,10 +113,10 @@ case "$EVENT" in
             NULL_COUNT=$(jq '[.prices[] | select(. == null)] | length' "$MEMORY_FILE")
             
             if [[ "$NULL_COUNT" -gt 0 ]]; then
-                send_telegram "⏰ FINAL CALL: Turnips expire at 10 PM! You're missing $NULL_COUNT price check(s). Sell now or they'll rot 🗑️"
+                send_message "⏰ FINAL CALL: Turnips expire at 10 PM! You're missing $NULL_COUNT price check(s). Sell now or they'll rot 🗑️"
             else
                 # All prices known, just remind to sell
-                send_telegram "⏰ Last chance to sell turnips tonight! Nook's Cranny closes at 10 PM 🗑️"
+                send_message "⏰ Last chance to sell turnips tonight! Nook's Cranny closes at 10 PM 🗑️"
             fi
         fi
         ;;
