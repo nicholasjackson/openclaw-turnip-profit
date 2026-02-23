@@ -40,6 +40,7 @@ As you report new prices, predictions get more accurate.
 
 - Python 3
 - gnuplot (for charts)
+- jq (for cron reminders - optional)
 
 ## Usage
 
@@ -59,6 +60,28 @@ Then just ask your agent about turnip prices:
 - "What are my turnip predictions?"
 - "Should I sell turnips today?"
 - "Turnip forecast for this week"
+
+### Daily Reminders (Optional)
+
+The skill can send automatic reminders via Telegram:
+- **Sunday 8am**: Check Daisy Mae's price
+- **Mon-Sat noon + 8pm**: Check Nook's Cranny prices
+- **Saturday 9:45pm**: Final warning before turnips rot
+
+On first use, the agent will offer to set this up automatically. Or manually add to crontab:
+
+```bash
+(crontab -l 2>/dev/null; cat <<'EOF'
+# Turnip Prophet reminders
+0 8 * * 0 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
+0 12 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 20 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+45 21 * * 6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+EOF
+) | crontab -
+```
+
+Adjust times for your timezone.
 
 ## Example
 

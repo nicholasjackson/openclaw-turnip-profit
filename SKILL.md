@@ -40,6 +40,75 @@ Activate when user mentions:
 - "bell profit" with context of turnips
 - Any question about when to sell turnips in Animal Crossing
 
+## Cron Setup (Optional but Recommended)
+
+### Auto-detect on first use
+When triggered for the first time (or when `memory/turnip-week.json` doesn't exist), check if cron reminders are configured:
+
+```bash
+crontab -l 2>/dev/null | grep -q "turnip-prophet"
+```
+
+If NOT configured, send a message:
+> "Want me to set up daily turnip price reminders? I can ping you:
+> - Sunday 8am: Check Daisy Mae's price
+> - Mon-Sat noon + 8pm: Check Nook's Cranny prices
+> - Saturday 9:45pm: Last chance warning
+> 
+> Reply 'yes' to auto-configure, or see the skill README for manual setup."
+
+If user confirms, generate and add the cron entries (see Manual Setup below).
+
+### Manual Setup
+
+Add these entries to user's crontab:
+
+```bash
+# Turnip Prophet - Sunday morning reminder (8 AM local time)
+0 8 * * 0 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
+
+# Turnip Prophet - Daily price check reminders (Mon-Sat, noon + 8 PM local time)
+0 12 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 20 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+
+# Turnip Prophet - Saturday final warning (9:45 PM local time)
+45 21 * * 6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+```
+
+**To install:**
+```bash
+(crontab -l 2>/dev/null; cat <<'EOF'
+# Turnip Prophet reminders
+0 8 * * 0 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"sunday-daisy"}' 2>&1 | logger -t openclaw-cron
+0 12 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+0 20 * * 1-6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"daily-check"}' 2>&1 | logger -t openclaw-cron
+45 21 * * 6 /usr/local/bin/openclaw gateway call --skill turnip-prophet --handler cron --params '{"event":"saturday-final"}' 2>&1 | logger -t openclaw-cron
+EOF
+) | crontab -
+```
+
+### Cron Handler Logic
+
+When `--handler cron` is called with an event:
+
+**sunday-daisy:**
+- Check if `memory/turnip-week.json` has a buy_price for the current week
+- If missing: Send Telegram reminder "🔔 Sunday! Check Daisy Mae's turnip price (90-110 bells) and buy your turnips 🥬"
+- If already set: Stay silent (user already reported it)
+
+**daily-check:**
+- Read `memory/turnip-week.json`
+- Determine which price slot is missing (Mon AM/PM through Sat AM/PM)
+- Send reminder: "🔔 Time to check Nook's Cranny turnip prices! Currently missing: [list slots]"
+- If all prices already known for today: Stay silent
+
+**saturday-final:**
+- Read `memory/turnip-week.json`
+- If any prices still unknown OR user hasn't sold: "⏰ FINAL CALL: Turnips expire at 10 PM! Sell now or they'll rot 🗑️"
+- Include current prediction if data exists
+
+After sending a reminder, DO NOT wait for a response in the cron handler — just send and exit.
+
 ## How It Works
 
 The skill uses a Python implementation of the actual ACNH turnip price algorithm to predict future prices based on:
