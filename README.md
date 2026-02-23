@@ -42,19 +42,26 @@ As you report new prices, predictions get more accurate.
 ## Requirements
 
 - Python 3
-- gnuplot (for charts)
+- matplotlib (for charts)
 - jq (for cron reminders - optional)
 
 ### Installation
 
-**Debian/Ubuntu:**
+**Python dependencies:**
 ```bash
-sudo apt-get update && sudo apt-get install -y python3 gnuplot jq
+pip3 install matplotlib
 ```
 
-**macOS:**
+**jq (optional, for cron reminders):**
+
+Debian/Ubuntu:
 ```bash
-brew install gnuplot jq
+sudo apt-get update && sudo apt-get install -y jq
+```
+
+macOS:
+```bash
+brew install jq
 ```
 
 ## Usage

@@ -6,21 +6,27 @@ metadata:
   {
     "openclaw":
       {
-        "requires": { "bins": ["python3", "gnuplot", "jq"] },
+        "requires": { "bins": ["python3", "jq"] },
         "install":
           [
             {
-              "id": "deps-debian",
+              "id": "python-deps",
               "kind": "shell",
-              "label": "Install dependencies (Debian/Ubuntu)",
-              "command": "sudo apt-get update && sudo apt-get install -y python3 gnuplot jq",
+              "label": "Install Python dependencies (matplotlib)",
+              "command": "pip3 install matplotlib"
+            },
+            {
+              "id": "jq-debian",
+              "kind": "shell",
+              "label": "Install jq (Debian/Ubuntu)",
+              "command": "sudo apt-get update && sudo apt-get install -y jq",
               "when": "debian"
             },
             {
-              "id": "deps-macos",
+              "id": "jq-macos",
               "kind": "shell",
-              "label": "Install dependencies (macOS)",
-              "command": "brew install gnuplot jq",
+              "label": "Install jq (macOS)",
+              "command": "brew install jq",
               "when": "darwin"
             }
           ]
@@ -217,9 +223,10 @@ echo '{"buy_price": 96, "prices": [84, 81, 78, null, null, null, null, null, nul
 After running the prediction, generate a chart image:
 
 ```bash
-bash scripts/generate_chart.sh <buy_price> '<known_json>' '<mins_json>' '<maxs_json>' /tmp/turnip-chart.png
+python3 scripts/generate_chart.py <buy_price> '<known_json>' '<mins_json>' '<maxs_json>' /tmp/turnip-chart.png
 ```
 
+- `buy_price`: Sunday buy price (integer)
 - `known_json`: array of 12 values, `null` for unknown (from `memory/turnip-week.json` prices)
 - `mins_json`: array of 12 min values from the prediction output
 - `maxs_json`: array of 12 max values from the prediction output
