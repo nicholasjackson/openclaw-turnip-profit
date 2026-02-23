@@ -71,6 +71,33 @@ Activate when user mentions:
 - "bell profit" with context of turnips
 - Any question about when to sell turnips in Animal Crossing
 
+## Privacy & Data Storage
+
+This skill stores local configuration data **only on your machine** in `memory/turnip-config.json`. No data is sent to external servers.
+
+**What gets stored (if you enable reminders):**
+- Channel name (telegram/whatsapp/discord/signal)
+- Your user ID on that channel
+- OpenClaw binary path
+- Setup timestamp
+
+**Why:** These values are needed so the cron reminders can send messages to the correct place without hard-coded values.
+
+**Where:** Stored locally in the skill's memory directory on your OpenClaw instance. Not shared, not uploaded, not visible to anyone else.
+
+**How to disable/reset:**
+```bash
+rm ~/.openclaw/workspace/skills/turnip-prophet/memory/turnip-config.json
+```
+
+**Removing cron entries:**
+```bash
+# Edit crontab and remove the turnip-prophet lines
+crontab -e
+```
+
+**Important:** You must explicitly confirm the setup flow before any config is saved. Declining the setup offer means nothing is stored.
+
 ## Daily Reminders (Optional)
 
 On first use, offer to set up daily reminders with an interactive flow:
@@ -125,9 +152,17 @@ Show the user exactly what will be added, with their specific values. Example:
 
 Replace channel/target with detected values. Escape single quotes properly.
 
-**Confirm before installing:**
+**Show user what will be stored (before confirmation):**
 ```
-Look good? Reply 'confirm' to add these to your crontab.
+This will save:
+• Channel: telegram
+• User ID: 8577655544
+• Location: memory/turnip-config.json (local only)
+
+This data is stored locally on your machine and is needed so cron reminders can send messages to you.
+You can delete the config file anytime with: rm memory/turnip-config.json
+
+Continue? Reply 'confirm' to proceed, or 'cancel' to skip.
 ```
 
 **On confirmation:**
@@ -146,10 +181,10 @@ Look good? Reply 'confirm' to add these to your crontab.
    (crontab -l 2>/dev/null; cat /tmp/turnip-cron-$$.txt) | crontab -
    ```
 3. Ask user to run the commands and confirm when done
-4. Reply: "✅ Once installed, you'll get reminders for missing data only. Check `crontab -l` to verify."
+4. Reply: "✅ Reminders configured. You'll only get pings for missing data. Check `crontab -l` to verify installation. To remove: `rm memory/turnip-config.json` and remove the cron entries."
 
 **On rejection/cancel:**
-- Reply: "No problem. Config is saved in `memory/turnip-config.json` if you want to set it up manually later."
+- Reply: "No problem. No data was stored. You can set this up anytime by asking about turnip prices again."
 
 ### Cron Handler (scripts/cron_handler.sh)
 

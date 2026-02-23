@@ -106,6 +106,32 @@ Just say "yes" when prompted and the agent will:
 
 Adjust times for your timezone by editing the cron schedule after installation.
 
+## Privacy & Data
+
+All data is stored **locally on your machine only**. No external calls, no cloud sync.
+
+**Config file** (`memory/turnip-config.json`):
+- Stores: channel name + your user ID (only if you enable reminders)
+- Purpose: Cron reminders need this to send you messages
+- Storage: Skill's local memory directory
+- Removal: Delete the file or disable reminders anytime
+
+**Price history** (`memory/turnip-week.json`):
+- Stores: Turnip prices you report each week
+- Purpose: Used to predict future prices
+- Resets: Automatically each Sunday
+
+**How to opt out:**
+```bash
+# Disable reminders (removes config)
+rm ~/.openclaw/workspace/skills/turnip-prophet/memory/turnip-config.json
+
+# Clear price history
+rm ~/.openclaw/workspace/skills/turnip-prophet/memory/turnip-week.json
+```
+
+No data leaves your machine. No tracking, no external APIs, no cloud storage.
+
 ## Example
 
 ```
